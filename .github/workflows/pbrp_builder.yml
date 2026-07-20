@@ -6,7 +6,7 @@ on:
       MANIFEST_BRANCH:
         description: 'PBRP Manifest Branch'
         required: true
-        default: ''
+        default: 'android-11.0'
         type: choice
         options:
         - android-12.1
@@ -17,11 +17,11 @@ on:
         - android-7.1
         - android-6.0
       DEVICE_TREE:
-        description: 'Custom Recovery Tree' # Your already made Device Tree for TWRP
+        description: 'Custom Recovery Tree'
         required: true
         default: 'https://github.com/excaliburXD/pbrp'
       DEVICE_TREE_BRANCH:
-        description: 'Custom Recovery Tree Branch' # Your Device Tree Branch, make sure it's right.
+        description: 'Custom Recovery Tree Branch'
         required: true
         default: 'android-11.0'
       MAKEFILE_NAME:
@@ -29,9 +29,9 @@ on:
         required: true
         default: 'pb_X695C'
       BUILD_TARGET:
-        description: 'Specify your Build Target' # Pick among boot, recovery and vendor_boot
+        description: 'Specify your Build Target'
         required: true
-        default: ''
+        default: 'pbrp'
         type: choice
         options:
         - pbrp
@@ -41,11 +41,11 @@ on:
       LDCHECK:
         description: 'Use LDCHECK'
         required: false
-        default: 'false'
+        default: false
         type: boolean
       LDCHECKPATH:
-        description: 'Path of blobs to check' # Use it know what kind of dependencies your missing for decryption blobs.
-        required: true
+        description: 'Path of blobs to check'
+        required: false
         default: ''
 
 jobs:
@@ -77,20 +77,14 @@ jobs:
       with:
         swap-size-gb: 12
 
-    - name: Check Manifest Branch
-      run: |
-        if [ ${{ inputs.MANIFEST_BRANCH }} == 'android-11.0' ] || [ ${{ inputs.MANIFEST_BRANCH }} == 'android-12.1' ]; then
-            echo "CHECK_LEGACY_BRANCH=false" >> $GITHUB_ENV
-        else
-            echo "CHECK_LEGACY_BRANCH=true" >> $GITHUB_ENV
-        fi
-
-    - name: Prepare the environment
+    - name: Prepare the environment & Install Python2
       run: |
         sudo apt update
         sudo apt -y upgrade
-        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev libncurses5 python3
-        
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev libncurses5 python3 python2
+        sudo ln -sf /usr/bin/python2 /usr/bin/python
+        sudo ln -sf /usr/bin/python2 /usr/bin/python2
+
     - name: Install OpenJDK
       uses: actions/setup-java@v4
       with:
@@ -127,39 +121,33 @@ jobs:
     - name: Extracting variables from .mk file
       run: |
         cd android-recovery/device_tree
-        # Initialize variables
         DEVICE_MAKEFILE=""
         DEVICE_DIRECTORY=""
         DEVICE_NAME=""
-        # Loop through each .mk file in the current directory
+        
         for file in *.mk; do
-            # Extract variables using sed
             makefile=$(sed -n 's/^[[:space:]]*PRODUCT_NAME[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
             brand=$(sed -n 's/^[[:space:]]*PRODUCT_BRAND[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
             codename=$(sed -n 's/^[[:space:]]*PRODUCT_DEVICE[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
             if [[ -n "$makefile" && -n "$brand" && -n "$codename" ]]; then
+                brand_lower=$(echo "$brand" | tr '[:upper:]' '[:lower:]')
                 DEVICE_MAKEFILE="$makefile"
-                DEVICE_DIRECTORY="device/$brand"
                 DEVICE_NAME="$codename"
+                DEVICE_DIRECTORY="device/$brand_lower/$codename"
+                
                 echo "DEVICE_MAKEFILE=${DEVICE_MAKEFILE}" >> $GITHUB_ENV
                 echo "DEVICE_NAME=${DEVICE_NAME}" >> $GITHUB_ENV
                 echo "DEVICE_DIRECTORY=${DEVICE_DIRECTORY}" >> $GITHUB_ENV
+                echo "BRAND_LOWER=${brand_lower}" >> $GITHUB_ENV
                 break
             fi
         done
-        # Navigate to the parent directory
+        
         cd ../
-        # Create the necessary directories
-        echo "Creating directory: $DEVICE_DIRECTORY"
-        mkdir -p "$DEVICE_DIRECTORY"
-        # Move device_tree folder to device_directory and rename it to $DEVICE_NAME
-        echo "Moving device_tree to $DEVICE_DIRECTORY/$DEVICE_NAME"
-        mv device_tree "$DEVICE_DIRECTORY"/"$DEVICE_NAME"
-
-    - name: Installing python2 for legacy builds
-      if: env.CHECK_LEGACY_BRANCH == 'true'
-      run: |
-        sudo apt-get install python2 python-is-python2
+        echo "Creating directory: device/${BRAND_LOWER}"
+        mkdir -p "device/${BRAND_LOWER}"
+        echo "Moving device_tree to device/${BRAND_LOWER}/${DEVICE_NAME}"
+        mv device_tree "device/${BRAND_LOWER}/${DEVICE_NAME}"
 
     - name: Building PitchBlack
       run: |
@@ -179,12 +167,12 @@ jobs:
             echo "BUILD_TARGET_NAME=vendor_boot" >> $GITHUB_ENV
         fi
 
-    - name: Set Build Date # Output will be use in Release
+    - name: Set Build Date
       run: |
         echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
 
     - name: Upload to Release
-      uses: softprops/action-gh-release@master
+      uses: softprops/action-gh-release@v1
       with:
         files: |
           android-recovery/out/target/product/${{ env.DEVICE_NAME }}/${{ env.BUILD_TARGET_NAME }}.img
@@ -198,12 +186,13 @@ jobs:
           Commit: Most recent [commit](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) during building.
 
     - name: Run LDCheck
-      if: inputs.LDCHECK == 'true'
+      if: inputs.LDCHECK == true
       run: |
         cd tools
         mv -n libneeds ${GITHUB_WORKSPACE}/android-recovery/out/target/product/${{ env.DEVICE_NAME }}/recovery/root/
         mv -n ldcheck ${GITHUB_WORKSPACE}/android-recovery/out/target/product/${{ env.DEVICE_NAME }}/recovery/root/
-        cd ../android-recovery/out/target/product/${{ env.DEVICE_NAME }}/recovery/root
+        cd ${GITHUB_WORKSPACE}/android-recovery/out/target/product/${{ env.DEVICE_NAME }}/recovery/root
         python3 ldcheck -p system/lib64:vendor/lib64:system/lib:vendor/lib -d ${{ inputs.LDCHECKPATH }}
         echo "Done checking missing dependencies. Review, and reconfigure your tree."
       continue-on-error: true
+      
