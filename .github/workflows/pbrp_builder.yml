@@ -81,9 +81,8 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y upgrade
-        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev libncurses5 python3 python2
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev libncurses5 python3 python2 python-is-python2
         sudo ln -sf /usr/bin/python2 /usr/bin/python
-        sudo ln -sf /usr/bin/python2 /usr/bin/python2
 
     - name: Install OpenJDK
       uses: actions/setup-java@v4
@@ -122,26 +121,32 @@ jobs:
       run: |
         cd android-recovery/device_tree
         DEVICE_MAKEFILE=""
-        DEVICE_DIRECTORY=""
         DEVICE_NAME=""
+        BRAND=""
         
         for file in *.mk; do
             makefile=$(sed -n 's/^[[:space:]]*PRODUCT_NAME[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
             brand=$(sed -n 's/^[[:space:]]*PRODUCT_BRAND[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
+            [ -z "$brand" ] && brand=$(sed -n 's/^[[:space:]]*PRODUCT_MANUFACTURER[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
             codename=$(sed -n 's/^[[:space:]]*PRODUCT_DEVICE[[:space:]]*:=\s*\(.*\)/\1/p' "$file")
-            if [[ -n "$makefile" && -n "$brand" && -n "$codename" ]]; then
-                brand_lower=$(echo "$brand" | tr '[:upper:]' '[:lower:]')
+            
+            if [[ -n "$makefile" && -n "$codename" ]]; then
                 DEVICE_MAKEFILE="$makefile"
                 DEVICE_NAME="$codename"
-                DEVICE_DIRECTORY="device/$brand_lower/$codename"
-                
-                echo "DEVICE_MAKEFILE=${DEVICE_MAKEFILE}" >> $GITHUB_ENV
-                echo "DEVICE_NAME=${DEVICE_NAME}" >> $GITHUB_ENV
-                echo "DEVICE_DIRECTORY=${DEVICE_DIRECTORY}" >> $GITHUB_ENV
-                echo "BRAND_LOWER=${brand_lower}" >> $GITHUB_ENV
+                BRAND="$brand"
                 break
             fi
         done
+        
+        if [ -z "$BRAND" ]; then
+            BRAND="infinix"
+        fi
+        
+        BRAND_LOWER=$(echo "$BRAND" | tr '[:upper:]' '[:lower:]')
+        
+        echo "DEVICE_MAKEFILE=${DEVICE_MAKEFILE}" >> $GITHUB_ENV
+        echo "DEVICE_NAME=${DEVICE_NAME}" >> $GITHUB_ENV
+        echo "BRAND_LOWER=${BRAND_LOWER}" >> $GITHUB_ENV
         
         cd ../
         echo "Creating directory: device/${BRAND_LOWER}"
