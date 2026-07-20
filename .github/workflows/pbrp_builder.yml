@@ -118,6 +118,7 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         export CCACHE_EXEC=$(which ccache)
         export USE_CCACHE=1
+        cp out/target/product/X695C/ramdisk.cpio out/target/product/X695C/ramdisk-recovery.cpio || true
         lunch ${{ github.event.inputs.MAKEFILE_NAME }}-eng && mka ${{ github.event.inputs.BUILD_TARGET }}
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
 
