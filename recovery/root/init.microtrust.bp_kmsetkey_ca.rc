@@ -1,0 +1,5 @@
+service beanpod_check_keybox_service /vendor/bin/bp_kmsetkey_ca
+    user root
+    group root
+    oneshot
+    seclabel u:r:recovery:s0
