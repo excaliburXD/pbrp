@@ -1,0 +1,52 @@
+import /init.recovery.microtrust.rc
+
+on init
+    export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw:/system/lib64/hw
+    start logd
+
+on post-fs-data
+    mkdir /data/media 0770 media_rw media_rw
+    mkdir /data/media/0 0770 media_rw media_rw
+    symlink /data/media/0 /sdcard
+
+on property:ro.crypto.state=encrypted && property:ro.crypto.type=file
+    install_keyring
+
+service logd /system/bin/logd
+    class core
+    socket logdr seqpacket 0666 root root
+    socket logdw dgram+passcred 0222 root root
+    file /proc/kmsg r
+    file /dev/kmsg w
+    user root
+    group root
+    capabilities SYSLOG AUDIT_CONTROL SETGID SETUID
+    seclabel u:r:logd:s0
+
+service vendor.gatekeeper-1-0 /vendor/bin/hw/android.hardware.gatekeeper@1.0-service
+    interface android.hardware.gatekeeper@1.0::IGatekeeper default
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service vendor.keymaster-4-0-beanpod /vendor/bin/hw/android.hardware.keymaster@4.0-service.beanpod
+    interface android.hardware.keymaster@4.0::IKeymasterDevice default
+    user root
+    group root drmrpc
+    disabled
+    seclabel u:r:recovery:s0
+
+on property:hwservicemanager.ready=true
+    start teei_daemon
+    start vendor.keymaster-4-0-beanpod
+    start vendor.gatekeeper-1-0
+
+on property:twrp.all.users.decrypted=true
+    stop teei_daemon
+    stop vendor.keymaster-4-0-beanpod 
+    stop vendor.gatekeeper-1-0
+
+on boot
+    start boot-hal-1-1
+    start health-hal-2-1
