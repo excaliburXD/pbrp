@@ -1,4 +1,4 @@
-name: Recovery Builder - OFRP mt6785-common 
+name: Recovery Builder - OFRP
 
 on:
   workflow_dispatch:
@@ -14,19 +14,19 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree URL'
         required: true
-        default: 'https://github.com/excaliburXD/android_device_Infinix-X695C.git'
+        default: 'https://github.com/excaliburXD/pbrp.git'
       DEVICE_TREE_BRANCH:
         description: 'Device Tree Branch'
         required: true
-        default: 'fox_11.1'
+        default: 'master'
       DEVICE_PATH:
         description: 'Device Path (e.g., device/xiaomi/sweet)'
         required: true
-        default: 'device/infinix/Infinix-X695C'
+        default: 'device/infinix/X695C'
       DEVICE_NAME:
         description: 'Device Codename'
         required: true
-        default: 'Infinix-X695C'
+        default: 'X695C'
       MAKEFILE_NAME:
         description: 'MAKEFILE_NAME'
         required: true
