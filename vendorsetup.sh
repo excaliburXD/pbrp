@@ -58,17 +58,26 @@ if [ "$1" = "$FDEVICE" -o "$FOX_BUILD_DEVICE" = "$FDEVICE" ]; then
 	export OF_PATCH_AVB20=1
 	export OF_DEFAULT_KEYMASTER_VERSION=4.0
 
-	# Magiskboot & Tooling
+	# Magiskboot
 	export OF_USE_MAGISKBOOT=1
 	export OF_USE_MAGISKBOOT_FOR_ALL_PATCHES=1
+
+	# Optimize Build (32mb)
 	export FOX_DELETE_AROMA=1
+	export FOX_REMOVE_AAPT=1
+	export OF_LOOP_DEVICE_ERRORS_TO_LOG=1
+    export OF_DISABLE_MIUI_SPECIFIC_FEATURES=1
 
 	# UI & Display
-	export OF_HIDE_NOTCH=1
 	export OF_SCREEN_H=2460
-	export OF_STATUS_H=80
+    export OF_STATUS_H=100
+    export OF_STATUS_INDENT_LEFT=52
+    export OF_STATUS_INDENT_RIGHT=52
+    export OF_CLOCK_POS=1
 
 	# Info Maintainer
-	export OF_MAINTAINER="excaliburXD"
-	export FOX_MAINTAINER_PATCH_VERSION="1"
+	export FOX_BUILD_TYPE="Android-11"
+    export FOX_VERSION="R11.1"
+    export FOX_VARIANT="XOS"
+    export OF_MAINTAINER="excaliburXD"
 fi
