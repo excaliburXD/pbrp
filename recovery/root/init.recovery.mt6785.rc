@@ -30,6 +30,7 @@ service vendor.keymaster-4-0-beanpod /vendor/bin/hw/android.hardware.keymaster@4
     interface android.hardware.keymaster@4.0::IKeymasterDevice default
     user root
     group root drmrpc
+    oneshot
     disabled
     seclabel u:r:recovery:s0
 
