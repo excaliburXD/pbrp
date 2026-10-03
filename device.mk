@@ -10,6 +10,15 @@ LOCAL_PATH := device/infinix/X695C
 # Dynamic Partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
+# API
+PRODUCT_SHIPPING_API_LEVEL := 30
+
+# HACK: Set vendor patch level
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.vendor.build.security_patch=2099-12-31 \
+    ro.bootimage.build.date.utc=0 \
+    ro.build.date.utc=0
+
 # Virtual A/B
 ENABLE_VIRTUAL_AB := true
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
@@ -87,3 +96,6 @@ TARGET_RECOVERY_DEVICE_MODULES += \
 RECOVERY_LIBRARY_SOURCE_FILES += \
     $(TARGET_OUT_SHARED_LIBRARIES)/libkeymaster4.so \
     $(TARGET_OUT_SHARED_LIBRARIES)/libpuresoftkeymasterdevice.so
+
+PRODUCT_PACKAGES += \
+    libshim_beanpod
